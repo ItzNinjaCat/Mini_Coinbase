@@ -93,13 +93,10 @@ public class TransactionService
             throw new RuntimeException("Quantity must be greater than 0");
         }
 
-
+        transactionDto.setId(id.incrementAndGet());
         transactionDto.setPrice(transactionDto.getQuantity().multiply(price));
         transactionDto.setTransactionType(TransactionDto.TransactionType.BUY);
         transactionDto.setStatus(TransactionDto.Status.NEW);
-
-        transactionDto.setId(id.incrementAndGet());
-        template.send("transactions", transactionDto.getId(), transactionDto);
 
         Transaction transaction = new Transaction();
         transaction.setUserId(transactionDto.getUserId());
@@ -111,15 +108,47 @@ public class TransactionService
         transaction.setTimestamp(LocalDateTime.now());
         transaction.setStatus("PENDING");
         transactionRepository.save(transaction);
+
+
+        template.send("transactions", transactionDto.getId(), transactionDto);
+
     }
 
     public void sellCrypto(TransactionDto transactionDto)
     {
-//        transactionDto.setId(id.incrementAndGet());
-//        transactionDto.setTransactionType(TransactionDto.TransactionType.SELL);
-//        transactionDto.setStatus(TransactionDto.Status.NEW);
-//
-//        template.send("transactions", transactionDto.getId(), transactionDto);
+        BigDecimal price = getCryptoPrice(transactionDto.getCryptoCurrency(), transactionDto.getFiatCurrency());
+        if (price == null)
+        {
+            throw new RuntimeException("Couldn't establish the price of the crypto currency");
+        }
+
+        boolean isFiatCurrencySupported = isFiatCurrencySupported(transactionDto.getFiatCurrency());
+        if (!isFiatCurrencySupported)
+        {
+            throw new RuntimeException("Fiat currency not supported");
+        }
+        if(transactionDto.getQuantity().compareTo(BigDecimal.ZERO) <= 0)
+        {
+            throw new RuntimeException("Quantity must be greater than 0");
+        }
+
+        transactionDto.setId(id.incrementAndGet());
+        transactionDto.setPrice(transactionDto.getQuantity().multiply(price));
+        transactionDto.setTransactionType(TransactionDto.TransactionType.SELL);
+        transactionDto.setStatus(TransactionDto.Status.NEW);
+
+        Transaction transaction = new Transaction();
+        transaction.setUserId(transactionDto.getUserId());
+        transaction.setTransactionType(Transaction.TransactionType.valueOf(transactionDto.getTransactionType().name()));
+        transaction.setPrice(transactionDto.getPrice());
+        transaction.setQuantity(transactionDto.getQuantity());
+        transaction.setFiatCurrency(transactionDto.getFiatCurrency());
+        transaction.setCryptoCurrency(transactionDto.getCryptoCurrency());
+        transaction.setTimestamp(LocalDateTime.now());
+        transaction.setStatus("PENDING");
+        transactionRepository.save(transaction);
+
+        template.send("transactions", transactionDto.getId(), transactionDto);
     }
 
     public TransactionDto confirm(TransactionDto fiat, TransactionDto crypto)
