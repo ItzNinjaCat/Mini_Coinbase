@@ -38,13 +38,32 @@ public class KafkaConfiguration {
         return props;
     }
     @Bean
-    public NewTopic compactTopicExample() {
-        return TopicBuilder.name("user-events")
+    public NewTopic registrationTopic() {
+        return TopicBuilder.name("user-registered")
                 .partitions(6)
                 .replicas(1)
                 .compact()
                 .build();
     }
+
+    @Bean
+    public NewTopic loginTopic() {
+        return TopicBuilder.name("user-logged-in")
+                .partitions(6)
+                .replicas(1)
+                .compact()
+                .build();
+    }
+
+    @Bean
+    public NewTopic verifyTopic() {
+        return TopicBuilder.name("user-verified")
+                .partitions(6)
+                .replicas(1)
+                .compact()
+                .build();
+    }
+
     @Bean
     public ProducerFactory<String, UserEvent> producerFactory() {
         return new DefaultKafkaProducerFactory<>(producerConfigs());

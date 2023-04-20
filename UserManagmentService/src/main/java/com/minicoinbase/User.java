@@ -35,4 +35,7 @@ public class User {
     @Column(name = "updated_at")
     private Date updatedAt;
 
+    public boolean getVerified() {
+        return verified;
+    }
 }

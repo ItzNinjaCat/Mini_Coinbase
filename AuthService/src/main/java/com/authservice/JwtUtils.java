@@ -3,6 +3,7 @@ package com.authservice;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -18,6 +19,9 @@ public class JwtUtils {
 
     @Value("${jwt.expiration}")
     private Long expiration;
+
+    @Autowired
+    private RedisService redisService;
 
     private SecretKey getSigningKey() {
         byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
@@ -37,10 +41,13 @@ public class JwtUtils {
                 .signWith(getSigningKey())
                 .compact();
     }
-    public Boolean validateToken(String token, String userId) {
-        final String tokenUserId = parseToken(token).getSubject();
+    public Boolean validateToken(String token) {
         final Date expirationDate = parseToken(token).getExpiration();
-        return (userId.equals(tokenUserId) && expirationDate.after(new Date()));
+        return (redisService.exists(token) && expirationDate.after(new Date()));
+    }
+
+    public String getUserIdFromToken(String token) {
+        return parseToken(token).getSubject();
     }
 
     public Claims parseToken(String token) {

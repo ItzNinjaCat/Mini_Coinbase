@@ -12,6 +12,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -42,14 +43,13 @@ public class UserService {
         user.setVerificationToken(token);
         UserEvent event = new UserEvent();
         event.setUserId(user.getId());
-        event.setEventType("userRegistered");
         Map<String, Object> eventData = new HashMap<>();
         eventData.put("name", user.getUsername());
         eventData.put("email", user.getEmail());
         eventData.put("created_at", user.getCreatedAt());
         eventData.put("token", token);
         event.setEventData(eventData);
-        kafkaTemplate.send("user-events", "register", event);
+        kafkaTemplate.send("user-registered", "register", event);
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         userRepository.save(user);
 
@@ -77,29 +77,29 @@ public class UserService {
         }
         UserEvent event = new UserEvent();
         event.setUserId(user.getId());
-        event.setEventType("userLoggedIn");
         Map<String, Object> eventData = new HashMap<>();
         eventData.put("name", user.getUsername());
         eventData.put("email", user.getEmail());
         event.setEventData(eventData);
-        kafkaTemplate.send("user-events", "login", event);
+        kafkaTemplate.send("user-logged-in", "login", event);
         return getCookie(user);
     }
 
-    public Cookie validateToken(String jwt_token, String userId) {
+    public Cookie validateToken(String jwt_token) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set("Authorization", "Bearer " + jwt_token);
         HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
         ResponseEntity<String> responseEntity =
-                restTemplate.exchange( authAddress + "/auth/validate?userId={user}",
-                        HttpMethod.GET, requestEntity, String.class, userId);
+                restTemplate.exchange( authAddress + "/auth/validate",
+                        HttpMethod.GET, requestEntity, String.class);
         return new Cookie("jwt", responseEntity.getBody());
     }
 
     public void logout(String jwt_token) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
+        // to be fixed
         headers.set("Authorization", "Bearer " + jwt_token);
         HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
         restTemplate.exchange(authAddress + "/auth/logout",
@@ -116,12 +116,29 @@ public class UserService {
         userRepository.save(user);
         UserEvent event = new UserEvent();
         event.setUserId(user.getId());
-        event.setEventType("userVerified");
         Map<String, Object> eventData = new HashMap<>();
         eventData.put("name", user.getUsername());
         eventData.put("email", user.getEmail());
         event.setEventData(eventData);
-        kafkaTemplate.send("user-events", "verified",event);
+        kafkaTemplate.send("user-verified", "verified", event);
         return true;
+    }
+
+    public boolean isVerified(String jwt_token) {
+       if(this.validateToken(jwt_token) == null){
+           return false;
+       }
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set("Authorization", "Bearer " + jwt_token);
+        HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
+        ResponseEntity<String> responseEntity =
+        restTemplate.exchange(authAddress + "/auth/getUserId",
+                HttpMethod.GET, requestEntity, String.class);
+        User user = userRepository.findById(Long.valueOf(Objects.requireNonNull(responseEntity.getBody()))).orElse(null);
+        if(user == null){
+            return false;
+        }
+        return user.getVerified();
     }
 }

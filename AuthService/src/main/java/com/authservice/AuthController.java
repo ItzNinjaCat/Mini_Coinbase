@@ -21,13 +21,14 @@ public class AuthController {
     }
 
     @GetMapping("/validate")
-    public ResponseEntity<String> validate(@RequestHeader("Authorization") String authHeader, @RequestParam("userId") String userId) {
+    public ResponseEntity<String> validate(@RequestHeader("Authorization") String authHeader) {
         String token = authHeader.replace("Bearer ", "");
-        if(redisService.isBlacklisted(token)){
+        if(!redisService.exists(token)){
             return ResponseEntity.badRequest().body("Token is invalidated");
         }
-        if (jwtUtils.validateToken(token, userId)) {
-            String newToken = jwtUtils.generateToken(userId);
+        if (jwtUtils.validateToken(token)) {
+            String newToken = jwtUtils.generateToken(jwtUtils.getUserIdFromToken(token));
+            redisService.save(token, jwtUtils.getTokenExpiration(token) / 1000);
             return new ResponseEntity<>(newToken, HttpStatus.OK);
         } else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
@@ -37,7 +38,7 @@ public class AuthController {
     @PostMapping("/logout")
     public ResponseEntity<String> logout(@RequestHeader("Authorization") String authHeader) {
         String token = authHeader.replace("Bearer ", "");
-        redisService.addToBlacklist(token);
+        redisService.delete(token);
         return ResponseEntity.ok().body("Token invalidated");
     }
 
@@ -45,14 +46,29 @@ public class AuthController {
     public ResponseEntity<String> refreshToken(@RequestHeader("Authorization") String authHeader, @RequestParam("userId") String userId) {
         String token = authHeader.replace("Bearer ", "");   
 
-        if(redisService.isBlacklisted(token)){
+        if(!redisService.exists(token)){
             return ResponseEntity.badRequest().body("Invalid token");
         }
-        if (!jwtUtils.validateToken(token, userId)) {
+        if (!jwtUtils.validateToken(token)) {
             return ResponseEntity.badRequest().body("Invalid token");
         }
+        redisService.delete(token);
         String newToken = jwtUtils.generateToken(userId);
-
+        redisService.save(newToken, jwtUtils.getTokenExpiration(newToken) / 1000);
         return ResponseEntity.ok().body((newToken));
+    }
+
+    @GetMapping("/getUserId")
+    public ResponseEntity<String> getUserId(@RequestHeader("Authorization") String authHeader) {
+        String token = authHeader.replace("Bearer ", "");
+        if(!redisService.exists(token)){
+            return ResponseEntity.badRequest().body("Token is invalidated");
+        }
+        if (jwtUtils.validateToken(token)) {
+            String userId = jwtUtils.getUserIdFromToken(token);
+            return new ResponseEntity<>(userId, HttpStatus.OK);
+        } else {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
     }
 }

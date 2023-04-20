@@ -41,7 +41,7 @@ public class UserController {
                 return new ResponseEntity<>("Invalid username or password", HttpStatus.BAD_REQUEST);
             }
             else {
-                if (userService.validateToken(jwt_token, String.valueOf(user.get().getId())) == null) {
+                if (userService.validateToken(jwt_token) == null) {
                     return new ResponseEntity<>("Already logged in", HttpStatus.OK);
                 } else {
                     token = userService.login(request.getUsernameOrEmail(), request.getPassword());
@@ -94,5 +94,19 @@ public class UserController {
             return new ResponseEntity<>("User verified successfully", HttpStatus.OK);
         }
         return new ResponseEntity<>("Invalid verification code", HttpStatus.BAD_REQUEST);
+    }
+
+    @GetMapping("/is_verified")
+    public ResponseEntity<?> isVerified(@CookieValue(
+            value = "jwt",
+            defaultValue = "no_jwt"
+    ) String jwt_token){
+        if(jwt_token.equals("no_jwt")){
+            return new ResponseEntity<>("Not logged in", HttpStatus.BAD_REQUEST);
+        }
+        if(userService.isVerified(jwt_token)){
+            return new ResponseEntity<>("User is verified", HttpStatus.OK);
+        }
+        return new ResponseEntity<>("User is not verified", HttpStatus.BAD_REQUEST);
     }
 }
