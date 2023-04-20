@@ -43,13 +43,95 @@ public class KafkaConsumerConfig {
         return new DefaultKafkaConsumerFactory<>(consumerConfigs());
     }
 
-    @KafkaListener(topics = "user-events", groupId = "userRegistered")
+    @KafkaListener(topics = "user-registered", groupId = "userRegistered")
     public void listenGroupUserRegistered(String message) throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();
-        Map<String,Object> map = mapper.readValue(message, Map.class);
+        Map map = mapper.readValue(message, Map.class);
         Map<String, String> eventData = (Map<String, String>) map.get("eventData");
         notificationService.sendVerificationEmail(eventData.get("email"), eventData.get("token"));
     }
+
+    @KafkaListener(topics= "user-logged-in", groupId = "userLoggedIn")
+    public void listenGroupUserLoggedIn(String message) throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        Map map = mapper.readValue(message, Map.class);
+        Map<String, String> eventData = (Map<String, String>) map.get("eventData");
+        System.out.println("User logged in: " + eventData.get("email"));
+        notificationService.sendLoginNotification(eventData.get("email"));
+    }
+
+    @KafkaListener(topics = "user-logged-out", groupId = "userLoggedOut")
+    public void listenGroupUserLoggedOut(String message) throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        Map map = mapper.readValue(message, Map.class);
+        Map<String, String> eventData = (Map<String, String>) map.get("eventData");
+        System.out.println("User logged out: " + eventData.get("email"));
+        notificationService.sendLogoutNotification(eventData.get("email"));
+    }
+
+    @KafkaListener(topics = "deposit-success", groupId = "deposit")
+    public void listenGroupDeposit(String message) throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        Map map = mapper.readValue(message, Map.class);
+        Map<String, String> eventData = (Map<String, String>) map.get("eventData");
+        System.out.println("Deposit: " + eventData.get("email"));
+        notificationService.sendSuccessfullyDepositedEmail(eventData.get("email"), eventData.get("amount"), eventData.get("currency"));
+    }
+
+    @KafkaListener(topics = "withdraw-success", groupId = "withdraw")
+    public void listenGroupWithdraw(String message) throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        Map map = mapper.readValue(message, Map.class);
+        Map<String, String> eventData = (Map<String, String>) map.get("eventData");
+        System.out.println("Withdraw: " + eventData.get("email"));
+        notificationService.sendSuccessfullyWithdrawnEmail(eventData.get("email"), eventData.get("amount"), eventData.get("currency"));
+    }
+
+    @KafkaListener(topics = "transfer-success", groupId = "transfer")
+    public void listenGroupTransfer(String message) throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        Map map = mapper.readValue(message, Map.class);
+        Map<String, String> eventData = (Map<String, String>) map.get("eventData");
+        System.out.println("Transfer: " + eventData.get("email"));
+        notificationService.sendSuccessfullyExchanged(eventData.get("email"), eventData.get("amount"), eventData.get("currency"));
+    }
+
+    @KafkaListener(topics = "user-verified", groupId = "userVerified")
+    public void listenGroupUserVerified(String message) throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        Map map = mapper.readValue(message, Map.class);
+        Map<String, String> eventData = (Map<String, String>) map.get("eventData");
+        System.out.println("User verified: " + eventData.get("email"));
+        notificationService.sendSuccessfullyVerifiedEmail(eventData.get("email"));
+    }
+
+    @KafkaListener(topics = "deposit-fail", groupId = "depositFail")
+    public void listenGroupDepositFail(String message) throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        Map map = mapper.readValue(message, Map.class);
+        Map<String, String> eventData = (Map<String, String>) map.get("eventData");
+        System.out.println("Deposit fail: " + eventData.get("email"));
+        notificationService.sendDepositFailedEmail(eventData.get("email"), eventData.get("amount"), eventData.get("currency"));
+    }
+
+    @KafkaListener(topics = "withdraw-fail", groupId = "withdrawFail")
+    public void listenGroupWithdrawFail(String message) throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        Map map = mapper.readValue(message, Map.class);
+        Map<String, String> eventData = (Map<String, String>) map.get("eventData");
+        System.out.println("Withdraw fail: " + eventData.get("email"));
+        notificationService.sendWithdrawFailedEmail(eventData.get("email"), eventData.get("amount"), eventData.get("currency"));
+    }
+
+    @KafkaListener(topics = "transfer-fail", groupId = "transferFail")
+    public void listenGroupTransferFail(String message) throws JsonProcessingException {
+        ObjectMapper mapper = new ObjectMapper();
+        Map map = mapper.readValue(message, Map.class);
+        Map<String, String> eventData = (Map<String, String>) map.get("eventData");
+        System.out.println("Transfer fail: " + eventData.get("email"));
+        notificationService.sendTransferFailedEmail(eventData.get("email"), eventData.get("amount"), eventData.get("currency"));
+    }
+
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, String> kafkaListenerContainerFactory() {
         ConcurrentKafkaListenerContainerFactory<String, String> factory =
