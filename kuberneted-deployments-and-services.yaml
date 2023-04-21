@@ -1,0 +1,409 @@
+apiVersion: v1
+kind: Secret
+metadata:
+    name: mysql-secret
+type: Opaque
+stringData:
+    password: root
+---
+apiVersion: v1
+kind: Secret
+metadata:
+    name: smtp-secret
+type: Opaque
+stringData:
+    password: "nvciobhnejzxirdt"
+---
+apiVersion: v1
+kind: Service
+metadata:
+    labels:
+        app: zookeeper-service
+    name: zookeeper-service
+spec:
+    type: NodePort
+    ports:
+        - name: zookeeper-port
+          port: 2181
+          nodePort: 30181
+          targetPort: 2181
+    selector:
+        app: zookeeper
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    labels:
+        app: zookeeper
+    name: zookeeper
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            app: zookeeper
+    template:
+        metadata:
+            labels:
+                app: zookeeper
+        spec:
+            containers:
+                - image: confluentinc/cp-zookeeper:7.3.2
+                  imagePullPolicy: IfNotPresent
+                  name: zookeeper
+                  ports:
+                      - containerPort: 2181
+                  env:
+                      - name: ZOOKEEPER_CLIENT_PORT
+                        value: "2181"
+                      - name: ZOOKEEPER_TICK_TIME
+                        value: "2000"
+---
+apiVersion: v1
+kind: Service
+metadata:
+    labels:
+        app: kafka-broker
+    name: kafka-broker
+spec:
+    ports:
+    - name: tcp
+      port: 9092
+      targetPort: 9092
+    type: ClusterIP
+    selector:
+        app: kafka-broker
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    labels:
+        app: kafka-broker
+    name: kafka-broker
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            app: kafka-broker
+    template:
+        metadata:
+            labels:
+                app: kafka-broker
+        spec:
+            containers:
+              - name: broker
+                env:
+                    - name: KAFKA_BROKER_ID
+                      value: "1"
+                    - name: KAFKA_ZOOKEEPER_CONNECT
+                      value: "zookeeper-service:2181"
+                    - name: KAFKA_LISTENER_SECURITY_PROTOCOL_MAP
+                      value: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+                    - name: KAFKA_ADVERTISED_LISTENERS
+                      value: PLAINTEXT://:29092,PLAINTEXT_INTERNAL://kafka-broker:9092
+                    - name: KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR
+                      value: "1"
+                    - name: KAFKA_TRANSACTION_STATE_LOG_MIN_ISR
+                      value: "1"
+                    - name: KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR
+                      value: "1"
+                image:  confluentinc/cp-kafka:7.3.2
+                imagePullPolicy: IfNotPresent
+                name: kafka-broker
+                ports:
+                    - containerPort: 9092
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: mysql
+    labels:
+        app: mysql-app
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            app: mysql-app
+    template:
+        metadata:
+            labels:
+                app: mysql-app
+        spec:
+            containers:
+                - name: mysql
+                  image: mysql
+                  env:
+                      - name: MYSQL_ROOT_PASSWORD
+                        valueFrom:
+                              secretKeyRef:
+                                name: mysql-secret
+                                key: password
+                  ports:
+                      - containerPort: 3306
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: mysql
+spec:
+    selector:
+        app: mysql-app
+    ports:
+    ports:
+    - name: redis
+      port: 3306
+      targetPort: 3306
+    type: ClusterIP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: redis-config
+data:
+  redis.conf: |
+    notify-keyspace-events Ex
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: redis
+spec:
+    selector:
+        matchLabels:
+            app: redis
+    replicas: 1
+    template:
+        metadata:
+            labels:
+                app: redis
+        spec:
+            volumes:
+                - name: host-sys
+                  hostPath:
+                      path: /sys
+                - name: redis-config-volume
+                  configMap:
+                      name: redis-config
+            initContainers:
+                - name: disable-thp
+                  image: redis:4.0-alpine
+                  volumeMounts:
+                      - name: host-sys
+                        mountPath: /host-sys
+                      - name: redis-config-volume
+                        mountPath: /usr/local/etc/redis/
+                  command:
+                      [
+                          "sh",
+                          "-c",
+                          "echo never > /host-sys/kernel/mm/transparent_hugepage/enabled",
+                      ]
+            containers:
+                - name: redis
+                  image: redis:4.0-alpine
+                  imagePullPolicy: IfNotPresent
+                  resources:
+                      requests:
+                          cpu: 350m
+                          memory: 1024Mi
+                  ports:
+                      - containerPort: 6379
+                  volumeMounts:
+                    - name: redis-config-volume
+                      mountPath: /usr/local/etc/redis/redis.conf
+                      subPath: redis.conf
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: redis
+    labels:
+        app: redis
+spec:
+    ports:
+    - name: redis
+      port: 6379
+      targetPort: 6379
+    type: ClusterIP
+    selector:
+        app: redis
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: auth-service
+spec:
+    selector:
+        app: auth-service
+    ports:
+        - protocol: "TCP"
+          port: 8090
+          targetPort: 8090
+    type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: auth-service
+spec:
+    selector:
+        matchLabels:
+            app: auth-service
+    replicas: 1
+    template:
+        metadata:
+            labels:
+                app: auth-service
+        spec:
+            containers:
+                - name: auth-service
+                  image: ninjakotka/auth-service:latest
+                  env:
+                      - name: REDIS_HOST
+                        value: redis
+                      - name: REDIS_PORT
+                        value: "6379"
+                      - name: JWT_SECRET
+                        value: "abcdefghijklmnOPQRSTUVWXYZ12321314fsdfsdhfdghfgh"
+                  imagePullPolicy: IfNotPresent
+                  ports:
+                      - containerPort: 8090
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: user-management-service
+spec:
+    selector:
+        app: user-management-service
+    ports:
+        - protocol: "TCP"
+          port: 8081
+          targetPort: 8081
+    type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: user-management-service
+spec:
+    selector:
+        matchLabels:
+            app: user-management-service
+    replicas: 1
+    template:
+        metadata:
+            labels:
+                app: user-management-service
+        spec:
+            containers:
+                - name: user-management-service
+                  image: ninjakotka/user-management-service:latest
+                  env:
+                      - name: KAFKA_HOST
+                        value: kafka-broker
+                      - name: KAFKA_PORT
+                        value: "9092"
+                      - name: DB_HOST
+                        value: mysql
+                      - name: DB_PORT
+                        value: "3306"
+                      - name: DB_NAME
+                        value: "coinbase"
+                      - name: DB_USERNAME
+                        value: "root"
+                      - name: DB_PASSWORD
+                        valueFrom:
+                            secretKeyRef:
+                                name: mysql-secret
+                                key: password
+                      - name: AUTH_HOST
+                        value: auth-service
+                      - name: AUTH_PORT
+                        value: "8090"
+                  imagePullPolicy: IfNotPresent
+                  ports:
+                      - containerPort: 8081
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notification-service
+spec:
+  selector:
+    app: notification-service
+  ports:
+    - protocol: "TCP"
+      port: 8091
+      targetPort: 8091
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notification-service
+spec:
+  selector:
+    matchLabels:
+      app: notification-service
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: notification-service
+    spec:
+      containers:
+        - name: notification-service
+          image: ninjakotka/notification-service:latest
+          env:
+            - name: KAFKA_HOST
+              value: kafka-broker
+            - name: KAFKA_PORT
+              value: "9092"
+            - name: SMTP_USERNAME
+              value: "minicoinbase.auth@gmail.com"
+            - name: SMTP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: smtp-secret
+                  key: password
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8091
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: reverse-proxy
+spec:
+  selector:
+    app: reverse-proxy
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reverse-proxy
+spec:
+  selector:
+    matchLabels:
+      app: reverse-proxy
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: reverse-proxy
+    spec:
+      containers:
+      - name: reverse-proxy
+        image: ninjakotka/reverse-proxy:latest
+        ports:
+            - containerPort: 8080
+        env:
+            - name: USER_MNGMT_HOST
+              value: user-management-service
+            - name: USER_MNGMT_PORT
+              value: "8081"
