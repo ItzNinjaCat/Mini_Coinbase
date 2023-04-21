@@ -75,41 +75,21 @@ public class NotificationService {
         logger.info("Successfully withdrawn email sent to {}", to);
     }
 
-    void sendSuccessfullyExchanged(String to, String amount, String currency) throws MessagingException {
+    void sendSuccessfullyExchanged(String to, String amount, String currency, String cryptoAmount, String cryptoCurrency) throws MessagingException {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(to);
         message.setSubject("Successfully Exchanged");
-        message.setText("You have successfully exchanged " + amount + currency + " from your account.");
+        message.setText("You have successfully exchanged " + amount + currency + " to " + cryptoAmount + cryptoCurrency + " from your account.");
         mailSender.send(message);
 
         logger.info("Successfully exchanged email sent to {}", to);
     }
 
-    public void sendDepositFailedEmail(String email, String amount, String currency) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(email);
-        message.setSubject("Deposit Failed");
-        message.setText("You have failed to deposit " + amount + currency + " to your account.");
-        mailSender.send(message);
-
-        logger.info("Deposit failed email sent to {}", email);
-    }
-
-    public void sendWithdrawFailedEmail(String email, String amount, String currency) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(email);
-        message.setSubject("Withdraw Failed");
-        message.setText("You have failed to withdraw " + amount + currency + " from your account.");
-        mailSender.send(message);
-
-        logger.info("Withdraw failed email sent to {}", email);
-    }
-
-    public void sendTransferFailedEmail(String email, String amount, String currency) {
+    public void sendTransferFailedEmail(String email, String amount, String currency, String cryptoAmount, String cryptoCurrency) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(email);
         message.setSubject("Exchange Failed");
-        message.setText("You have failed to exchange " + amount + currency + " from your account.");
+        message.setText("You have tried to exchange " + amount + currency + " to " + cryptoAmount + cryptoCurrency + " from your account but the exchange failed.");
         mailSender.send(message);
 
         logger.info("Exchange failed email sent to {}", email);
