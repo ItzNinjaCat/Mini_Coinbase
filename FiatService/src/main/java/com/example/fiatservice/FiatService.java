@@ -8,6 +8,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.example.fiatservice.CustomExceptions.UnsupportedCurrencyException;
+import com.example.fiatservice.CustomExceptions.InsufficientFundsException;
+import com.example.fiatservice.CustomExceptions.InvalidAmountException;
 
 
 import java.math.BigDecimal;
@@ -142,6 +145,67 @@ public class FiatService
         }
 
         fiatRepository.save(fiatBalance);
+    }
+
+    @Transactional
+    public void deposit(DepositWithdraw request) throws UnsupportedCurrencyException, InvalidAmountException
+    {
+        if (!isCurrencySupported(request.getCurrency()))
+        {
+            throw new UnsupportedCurrencyException("Unsupported currency: " + request.getCurrency());
+        }
+
+        if (request.getAmount().compareTo(BigDecimal.ZERO) <= 0)
+        {
+            throw new InvalidAmountException("Invalid amount: " + request.getAmount());
+        }
+
+        // Update the user's fiat balance in the database
+        FiatBalance fiatBalance = fiatRepository.findByUserIdAndCurrency(request.getUserId(), request.getCurrency())
+                .orElseThrow(() -> new IllegalArgumentException("Invalid user id or currency."));
+
+        fiatBalance.setBalance(fiatBalance.getBalance().add(request.getAmount()));
+        fiatRepository.save(fiatBalance);
+        depositWithdrawKafkaTemplate.send("deposit-completed", null, request);
+    }
+
+    @Transactional
+    public void withdraw(DepositWithdraw request) throws UnsupportedCurrencyException, InsufficientFundsException, InvalidAmountException
+    {
+        if (!isCurrencySupported(request.getCurrency()))
+        {
+            throw new UnsupportedCurrencyException("Unsupported currency: " + request.getCurrency());
+        }
+
+        if (request.getAmount().compareTo(BigDecimal.ZERO) <= 0)
+        {
+            throw new InvalidAmountException("Invalid amount: " + request.getAmount());
+        }
+
+        // Update the user's fiat balance in the database
+        FiatBalance fiatBalance = fiatRepository.findByUserIdAndCurrency(request.getUserId(), request.getCurrency())
+                .orElseThrow(() -> new IllegalArgumentException("Invalid user id or currency."));
+
+        if (fiatBalance.getBalance().subtract(request.getAmount()).compareTo(BigDecimal.ZERO) < 0)
+        {
+            throw new InsufficientFundsException("Insufficient funds.");
+        }
+
+        fiatBalance.setBalance(fiatBalance.getBalance().subtract(request.getAmount()));
+        fiatRepository.save(fiatBalance);
+        depositWithdrawKafkaTemplate.send("withdraw-completed", null, request);
+    }
+
+    private boolean isCurrencySupported(String currency)
+    {
+        for (String supportedCurrency : supportedFiatCurrencies.split(","))
+        {
+            if (supportedCurrency.equals(currency))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
 }
