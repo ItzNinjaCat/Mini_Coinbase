@@ -44,10 +44,18 @@ public class TransactionServiceApplication {
 	}
 
 	@Bean
-	public NewTopic stockTopic() {
+	public NewTopic fiatTopic() {
 		return TopicBuilder.name("fiat")
 				.partitions(3)
 				.compact()
+				.build();
+	}
+
+	@Bean
+	public NewTopic transactionCompletedTopic() {
+		return TopicBuilder.name("transaction-completed")
+				.partitions(3)
+//				.compact()
 				.build();
 	}
 

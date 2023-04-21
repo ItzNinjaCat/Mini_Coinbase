@@ -33,6 +33,9 @@ public class TransactionService
     private KafkaTemplate<Long, TransactionDto> template;
 
     @Autowired
+    private KafkaTemplate<Long, Transaction> transactionCompletedTemplate;
+
+    @Autowired
     @Lazy
     private RestTemplate restTemplate;
 
@@ -182,6 +185,7 @@ public class TransactionService
             main.setSource(source);
         }
         transactionRepository.save(transaction);
+        transactionCompletedTemplate.send("transaction-completed", main.getId(), transaction);
 
         return main;
     }
