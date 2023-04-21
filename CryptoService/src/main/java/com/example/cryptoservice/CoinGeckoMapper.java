@@ -15,6 +15,7 @@ public class CoinGeckoMapper {
         Map<String, String> cryptoMap = new HashMap<>();
         cryptoMap.put("BTC", "bitcoin");
         cryptoMap.put("ETH", "ethereum");
+        cryptoMap.put("DOGE", "dogecoin");
         CRYPTO_MAP = Collections.unmodifiableMap(cryptoMap);
     }
 

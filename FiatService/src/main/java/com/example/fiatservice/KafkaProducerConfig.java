@@ -33,4 +33,19 @@ public class KafkaProducerConfig
     public KafkaTemplate<Long, TransactionDto> transactionKafkaTemplate() {
         return new KafkaTemplate<>(transactionProducerFactory());
     }
+
+    @Bean
+    public ProducerFactory<byte[], DepositWithdraw> depositWithdrawProducerFactory() {
+        Map<String, Object> configProps = new HashMap<>();
+        configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        configProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, LongSerializer.class);
+        configProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
+
+        return new DefaultKafkaProducerFactory<>(configProps);
+    }
+
+    @Bean
+    public KafkaTemplate<byte[], DepositWithdraw> depositWithdrawKafkaTemplate() {
+        return new KafkaTemplate<>(depositWithdrawProducerFactory());
+    }
 }
