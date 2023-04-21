@@ -51,8 +51,21 @@ public class CryptoService
 
     public void reserve(TransactionDto transaction)
     {
-        transaction.setSource(SOURCE);
+        switch (transaction.getTransactionType())
+        {
+            case BUY:
+                reserveBuy(transaction);
+                break;
+            case SELL:
+                reserveSell(transaction);
+                break;
+        }
 
+    }
+
+    private void reserveBuy(TransactionDto transaction)
+    {
+        transaction.setSource(SOURCE);
         if (transaction.getQuantity().compareTo(BigDecimal.ZERO) <= 0)
         {
             transaction.setStatus(TransactionDto.Status.REJECT);
@@ -62,10 +75,36 @@ public class CryptoService
             CryptoBalance cryptoBalance = cryptoBalanceRepository.findByUserIdAndCrypto(transaction.getUserId(), transaction.getCryptoCurrency())
                     .orElseThrow(() -> new IllegalArgumentException("Invalid user id or currency."));
 
-            cryptoBalance.setReserved(transaction.getQuantity());
+            cryptoBalance.setReserved(cryptoBalance.getReserved().add(transaction.getQuantity()));
             cryptoBalanceRepository.save(cryptoBalance);
         }
 
+        transactionKafkaTemplate.send("crypto", transaction.getId(), transaction);
+        LOG.info("Sent: {}", transaction);
+    }
+
+    private void reserveSell(TransactionDto transaction)
+    {
+        transaction.setSource(SOURCE);
+        if (transaction.getQuantity().compareTo(BigDecimal.ZERO) <= 0)
+        {
+            transaction.setStatus(TransactionDto.Status.REJECT);
+        } else
+        {
+            CryptoBalance cryptoBalance = cryptoBalanceRepository.findByUserIdAndCrypto(transaction.getUserId(), transaction.getCryptoCurrency())
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid user id or currency."));
+
+            if (cryptoBalance.getBalance().compareTo(transaction.getQuantity()) < 0)
+            {
+                transaction.setStatus(TransactionDto.Status.REJECT);
+            } else
+            {
+                transaction.setStatus(TransactionDto.Status.ACCEPT);
+                cryptoBalance.setBalance(cryptoBalance.getBalance().subtract(transaction.getQuantity()));
+                cryptoBalance.setReserved(cryptoBalance.getReserved().add(transaction.getQuantity()));
+                cryptoBalanceRepository.save(cryptoBalance);
+            }
+        }
         transactionKafkaTemplate.send("crypto", transaction.getId(), transaction);
         LOG.info("Sent: {}", transaction);
     }
@@ -75,11 +114,37 @@ public class CryptoService
         CryptoBalance cryptoBalance = cryptoBalanceRepository.findByUserIdAndCrypto(transactionDto.getUserId(), transactionDto.getCryptoCurrency())
                 .orElseThrow(() -> new IllegalArgumentException("Invalid user id or currency."));
 
-        cryptoBalance.setBalance(cryptoBalance.getBalance().add(transactionDto.getQuantity()));
-        cryptoBalance.setReserved(cryptoBalance.getReserved().subtract(transactionDto.getQuantity()));
+        switch (transactionDto.getTransactionType())
+        {
+            case BUY:
+                cryptoBalance.setBalance(cryptoBalance.getBalance().add(transactionDto.getQuantity()));
+                cryptoBalance.setReserved(cryptoBalance.getReserved().subtract(transactionDto.getQuantity()));
+                break;
+            case SELL:
+                cryptoBalance.setReserved(cryptoBalance.getReserved().subtract(transactionDto.getQuantity()));
+                break;
+        }
+//        cryptoBalance.setBalance(cryptoBalance.getBalance().add(transactionDto.getQuantity()));
+//        cryptoBalance.setReserved(cryptoBalance.getReserved().subtract(transactionDto.getQuantity()));
         cryptoBalanceRepository.save(cryptoBalance);
     }
 
+    public void rollback(TransactionDto transactionDto)
+    {
+        CryptoBalance cryptoBalance = cryptoBalanceRepository.findByUserIdAndCrypto(transactionDto.getUserId(), transactionDto.getCryptoCurrency())
+                .orElseThrow(() -> new IllegalArgumentException("Invalid user id or currency."));
+        switch (transactionDto.getTransactionType())
+        {
+            case BUY:
+                cryptoBalance.setReserved(cryptoBalance.getReserved().subtract(transactionDto.getQuantity()));
+                break;
+            case SELL:
+                cryptoBalance.setBalance(cryptoBalance.getBalance().add(transactionDto.getQuantity()));
+                cryptoBalance.setReserved(cryptoBalance.getReserved().subtract(transactionDto.getQuantity()));
+                break;
+        }
+        cryptoBalanceRepository.save(cryptoBalance);
+    }
 
     public BigDecimal getPrice(String cryptoCurrency, String fiatCurrency)
     {
@@ -91,9 +156,5 @@ public class CryptoService
         }
 
         return coinGeckoClient.getPrice(apiName, fiatCurrency.toLowerCase());
-    }
-
-    public void rollback(TransactionDto transaction)
-    {
     }
 }

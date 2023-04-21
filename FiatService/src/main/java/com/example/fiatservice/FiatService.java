@@ -7,7 +7,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 
 import java.math.BigDecimal;
@@ -55,6 +54,39 @@ public class FiatService
 
     public void reserve(TransactionDto transaction)
     {
+        switch (transaction.getTransactionType())
+        {
+            case BUY:
+                reserveBuy(transaction);
+                break;
+            case SELL:
+                reserveSell(transaction);
+                break;
+        }
+    }
+    public void confirm(TransactionDto transaction)
+    {
+        transaction.setSource(SOURCE);
+        FiatBalance fiatBalance = fiatRepository.findByUserIdAndCurrency(transaction.getUserId(), transaction.getFiatCurrency())
+                .orElseThrow(() -> new IllegalArgumentException("Invalid user id or currency."));
+
+        switch (transaction.getTransactionType())
+        {
+            case BUY:
+                fiatBalance.setReserved(fiatBalance.getReserved().subtract(transaction.getPrice()));
+                break;
+            case SELL:
+                fiatBalance.setBalance(fiatBalance.getBalance().add(transaction.getPrice()));
+                fiatBalance.setReserved(fiatBalance.getReserved().subtract(transaction.getPrice()));
+                break;
+        }
+        fiatRepository.save(fiatBalance);
+
+        transactionKafkaTemplate.send("fiat", transaction.getId(), transaction);
+        LOG.info("Sent: {}", transaction);
+    }
+    public void reserveBuy(TransactionDto transaction)
+    {
         transaction.setSource(SOURCE);
         FiatBalance fiatBalance = fiatRepository.findByUserIdAndCurrency(transaction.getUserId(), transaction.getFiatCurrency())
                 .orElseThrow(() -> new IllegalArgumentException("Invalid user id or currency."));
@@ -75,13 +107,14 @@ public class FiatService
         LOG.info("Sent: {}", transaction);
     }
 
-    public void confirm(TransactionDto transaction)
+    private void reserveSell(TransactionDto transaction)
     {
         transaction.setSource(SOURCE);
         FiatBalance fiatBalance = fiatRepository.findByUserIdAndCurrency(transaction.getUserId(), transaction.getFiatCurrency())
                 .orElseThrow(() -> new IllegalArgumentException("Invalid user id or currency."));
 
-        fiatBalance.setReserved(fiatBalance.getReserved().subtract(transaction.getPrice()));
+        transaction.setStatus(TransactionDto.Status.ACCEPT);
+        fiatBalance.setReserved(fiatBalance.getReserved().add(transaction.getPrice()));
         fiatRepository.save(fiatBalance);
 
         transactionKafkaTemplate.send("fiat", transaction.getId(), transaction);
@@ -92,10 +125,19 @@ public class FiatService
     {
         FiatBalance fiatBalance = fiatRepository.findByUserIdAndCurrency(transaction.getUserId(), transaction.getFiatCurrency())
                 .orElseThrow(() -> new IllegalArgumentException("Invalid user id or currency."));
-        fiatBalance.setReserved(fiatBalance.getReserved().subtract(transaction.getPrice()));
-        fiatBalance.setBalance(fiatBalance.getBalance().add(transaction.getPrice()));
+
+        switch (transaction.getTransactionType())
+        {
+            case BUY:
+                fiatBalance.setReserved(fiatBalance.getReserved().subtract(transaction.getPrice()));
+                fiatBalance.setBalance(fiatBalance.getBalance().add(transaction.getPrice()));
+                break;
+            case SELL:
+                fiatBalance.setReserved(fiatBalance.getReserved().subtract(transaction.getPrice()));
+                break;
+        }
+
         fiatRepository.save(fiatBalance);
     }
-
 
 }

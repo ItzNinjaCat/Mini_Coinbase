@@ -29,19 +29,23 @@ public class CryptoServiceKafkaConsumer
     public void onTransaction(TransactionDto transaction) // ConsumerRecord<Long, TransactionDto> record
     {
         LOG.info("Received: {}", transaction);
+        if(transaction.getStatus() == null) // this shouldn't be happening but it does
+        {
+            LOG.error("Transaction status is null");
+            return;
+        }
         if (transaction.getStatus().equals(TransactionDto.Status.NEW))
         {
-            LOG.info("RESERVE FROM PAYMENT APP");
+            LOG.info("RESERVE FROM CRYPTO APP");
             cryptoService.reserve(transaction);
         } else if (transaction.getStatus().equals(TransactionDto.Status.CONFIRMED))
         {
-            LOG.info("CONFIRM FROM PAYMENT APP");
+            LOG.info("CONFIRM FROM CRYPTO APP");
             cryptoService.confirm(transaction);
         } else if (transaction.getStatus().equals(TransactionDto.Status.ROLLBACK) && !transaction.getSource().equals("crypto-service"))
         {
+            LOG.info("ROLLBACK FROM CRYPTO APP");
             cryptoService.rollback(transaction);
-            LOG.info("ROLLBACK FROM PAYMENT APP");
         }
-
     }
 }

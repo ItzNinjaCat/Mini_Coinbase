@@ -30,6 +30,11 @@ public class FiatServiceKafkaConsumer
     public void onTransaction(TransactionDto transaction) // ConsumerRecord<Long, TransactionDto> record
     {
         LOG.info("Received: {}", transaction);
+        if(transaction.getStatus() == null) // this shouldn't be happening but it does
+        {
+            LOG.error("Transaction status is null");
+            return;
+        }
         if (transaction.getStatus().equals(TransactionDto.Status.NEW))
         {
             LOG.info("RESERVE FROM FIAT APP");

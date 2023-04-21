@@ -10,12 +10,21 @@ import java.math.BigDecimal;
 import java.util.Map;
 
 @Service
-public class CoinGeckoService {
-    public BigDecimal getPrice(String coinGeckoId, String currency) {
-        CoinGeckoApiClient client = new CoinGeckoApiClientImpl();
-        Map<String, Map<String, Double>> priceData = client.getPrice(coinGeckoId, currency, true, true, true, true);
-        return BigDecimal.valueOf(priceData.get(coinGeckoId).get(currency));
+public class CoinGeckoService
+{
+    //    public BigDecimal getPrice(String coinGeckoId, String currency) {
+//        CoinGeckoApiClient client = new CoinGeckoApiClientImpl();
+//        Map<String, Map<String, Double>> priceData = client.getPrice(coinGeckoId, currency, true, true, true, true);
+//        if (priceData.get(coinGeckoId).get(currency) == null) {
+//            return null;
+//        }
+//        return BigDecimal.valueOf(priceData.get(coinGeckoId).get(currency));
+//    }
+    public BigDecimal getPrice(String coinGeckoId, String currency)
+    {
+        return BigDecimal.valueOf(1000);
     }
+
 
 //    public static void main(String[] args) {
 //        CoinGeckoService coinGeckoService = new CoinGeckoService();
