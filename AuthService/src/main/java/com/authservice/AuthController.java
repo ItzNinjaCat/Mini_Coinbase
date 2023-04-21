@@ -43,7 +43,7 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<String> refreshToken(@RequestHeader("Authorization") String authHeader, @RequestParam("userId") String userId) {
+    public ResponseEntity<String> refreshToken(@RequestHeader("Authorization") String authHeader) {
         String token = authHeader.replace("Bearer ", "");   
 
         if(!redisService.exists(token)){
@@ -52,6 +52,7 @@ public class AuthController {
         if (!jwtUtils.validateToken(token)) {
             return ResponseEntity.badRequest().body("Invalid token");
         }
+        String userId = jwtUtils.getUserIdFromToken(token);
         redisService.delete(token);
         String newToken = jwtUtils.generateToken(userId);
         redisService.save(newToken, jwtUtils.getTokenExpiration(newToken) / 1000);
