@@ -18,12 +18,32 @@ public class ReverseProxyApplication {
     @Value("${user.management.url}")
     private String userManagementUrl;
 
+    @Value("${transaction.url}")
+    private String transactionUrl;
+
+    @Value("${crypto.url}")
+    private String cryptoUrl;
+
+    @Value("${fiat.url}")
+    private String fiatUrl;
+
+    @Value("${auth.url}")
+    private String authUrl;
+
+
     @Bean
     public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
         return builder.routes()
                 .route("users", r -> r.path("/api/user/**")
                         .uri(userManagementUrl))
-
+                .route("transactions", r -> r.path("/transaction/**")
+                        .uri(transactionUrl))
+                .route("crypto", r -> r.path("/api/crypto/**")
+                        .uri(cryptoUrl))
+                .route("fiat", r -> r.path("/api/fiat/**")
+                        .uri(fiatUrl))
+                .route("auth", r -> r.path("/auth/**")
+                        .uri(authUrl))
                 .build();
     }
 

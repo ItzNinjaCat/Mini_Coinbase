@@ -8,6 +8,12 @@
         <version>3.0.5</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
+    <repositories>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories>
     <groupId>com.example</groupId>
     <artifactId>FiatService</artifactId>
     <version>0.0.1-SNAPSHOT</version>
@@ -60,10 +66,9 @@
             <artifactId>lombok</artifactId>
         </dependency>
         <dependency>
-            <groupId>com</groupId>
-            <artifactId>Shared</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
-            <scope>compile</scope>
+            <groupId>com.github.ItzNinjaCat</groupId>
+            <artifactId>Mini_coinbase_shared_dto</artifactId>
+            <version>598c8bd4ed</version>
         </dependency>
     </dependencies>
 

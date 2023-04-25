@@ -407,3 +407,175 @@ spec:
               value: user-management-service
             - name: USER_MNGMT_PORT
               value: "8081"
+            - name: TRANSACTION_HOST
+              value: transaction-service
+            - name: TRANSACTION_PORT
+              value: "8082"
+            - name: CRYPTO_HOST
+              value: crypto-service
+            - name: CRYPTO_PORT
+              value: "8083"
+            - name: FIAT_HOST
+              value: fiat-service
+            - name: FIAT_PORT
+              value: "8084"
+            - name: AUTH_HOST
+              value: auth-service
+            - name: AUTH_PORT
+              value: "8090"
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: transaction-service
+spec:
+    selector:
+        app: transaction-service
+    ports:
+        - protocol: "TCP"
+          port: 8082
+          targetPort: 8082
+    type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: transaction-service
+spec:
+    selector:
+        matchLabels:
+            app: transaction-service
+    replicas: 1
+    template:
+        metadata:
+            labels:
+                app: transaction-service
+        spec:
+            containers:
+                - name: transaction-service
+                  image: ninjakotka/transaction-service:latest
+                  env:
+                      - name: KAFKA_HOST
+                        value: kafka-broker
+                      - name: KAFKA_PORT
+                        value: "9092"
+                      - name: DB_HOST
+                        value: mysql
+                      - name: DB_PORT
+                        value: "3306"
+                      - name: DB_NAME
+                        value: "coinbase"
+                      - name: DB_USERNAME
+                        value: "root"
+                      - name: DB_PASSWORD
+                        valueFrom:
+                            secretKeyRef:
+                                name: mysql-secret
+                                key: password
+                  imagePullPolicy: IfNotPresent
+                  ports:
+                      - containerPort: 8082
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: crypto-service
+spec:
+    selector:
+        app: crypto-service
+    ports:
+        - protocol: "TCP"
+          port: 8083
+          targetPort: 8083
+    type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: crypto-service
+spec:
+    selector:
+        matchLabels:
+            app: crypto-service
+    replicas: 1
+    template:
+        metadata:
+            labels:
+                app: crypto-service
+        spec:
+            containers:
+                - name: crypto-service
+                  image: ninjakotka/crypto-service:latest
+                  env:
+                      - name: KAFKA_HOST
+                        value: kafka-broker
+                      - name: KAFKA_PORT
+                        value: "9092"
+                      - name: DB_HOST
+                        value: mysql
+                      - name: DB_PORT
+                        value: "3306"
+                      - name: DB_NAME
+                        value: "coinbase"
+                      - name: DB_USERNAME
+                        value: "root"
+                      - name: DB_PASSWORD
+                        valueFrom:
+                            secretKeyRef:
+                                name: mysql-secret
+                                key: password
+                  imagePullPolicy: IfNotPresent
+                  ports:
+                      - containerPort: 8083
+---
+apiVersion: v1
+kind: Service
+metadata:
+    name: fiat-service
+spec:
+    selector:
+        app: fiat-service
+    ports:
+        - protocol: "TCP"
+          port: 8084
+          targetPort: 8084
+    type: LoadBalancer
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: fiat-service
+spec:
+    selector:
+        matchLabels:
+            app: fiat-service
+    replicas: 1
+    template:
+        metadata:
+            labels:
+                app: fiat-service
+        spec:
+            containers:
+                - name: fiat-service
+                  image: ninjakotka/fiat-service:latest
+                  env:
+                      - name: KAFKA_HOST
+                        value: kafka-broker
+                      - name: KAFKA_PORT
+                        value: "9092"
+                      - name: DB_HOST
+                        value: mysql
+                      - name: DB_PORT
+                        value: "3306"
+                      - name: DB_NAME
+                        value: "coinbase"
+                      - name: DB_USERNAME
+                        value: "root"
+                      - name: DB_PASSWORD
+                        valueFrom:
+                            secretKeyRef:
+                                name: mysql-secret
+                                key: password
+                  imagePullPolicy: IfNotPresent
+                  ports:
+                      - containerPort: 8084

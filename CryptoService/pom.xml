@@ -58,16 +58,9 @@
             <version>master-SNAPSHOT</version>
         </dependency>
         <dependency>
-            <groupId>com</groupId>
-            <artifactId>Shared</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>com</groupId>
-            <artifactId>Shared</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
-            <scope>compile</scope>
+            <groupId>com.github.ItzNinjaCat</groupId>
+            <artifactId>Mini_coinbase_shared_dto</artifactId>
+            <version>598c8bd4ed</version>
         </dependency>
     </dependencies>
     <repositories>

@@ -1,6 +1,5 @@
 package com.example.fiatservice;
 
-import com.shared.TransactionDto;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.LongSerializer;
 import org.springframework.beans.factory.annotation.Value;

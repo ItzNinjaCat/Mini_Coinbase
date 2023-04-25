@@ -1,6 +1,5 @@
 package com.transactionservice;
 
-import com.shared.TransactionDto;
 import org.apache.kafka.clients.admin.NewTopic;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.streams.StreamsBuilder;
@@ -19,7 +18,6 @@ import org.springframework.kafka.support.serializer.JsonSerde;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.Duration;
-
 @SpringBootApplication
 @EnableKafkaStreams
 public class TransactionServiceApplication {
@@ -72,7 +70,7 @@ public class TransactionServiceApplication {
 						transactionService::confirm,
 						JoinWindows.of(Duration.ofSeconds(10)),
 						StreamJoined.with(Serdes.Long(), transactionDtoSerde, transactionDtoSerde))
-				.peek((k, t) -> LOG.info("Output: {}", t))
+				.peek((k, t) -> LOG.info("Output: {}"))
 				.to("transactions");
 
 		return stream;
