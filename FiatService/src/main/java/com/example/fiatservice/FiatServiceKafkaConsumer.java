@@ -1,11 +1,15 @@
 package com.example.fiatservice;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
+
+import java.util.Map;
 
 
 @Service
@@ -19,8 +23,11 @@ public class FiatServiceKafkaConsumer
     private FiatService fiatService;
 
     @KafkaListener(topics = "user-registered", groupId = "fiatServiceUserRegistrationGroup", containerFactory = "userRegistrationKafkaListenerContainerFactory")
-    public void onUserRegistration(Long userId)
+    public void onUserRegistration(String message) throws JsonProcessingException
     {
+        ObjectMapper mapper = new ObjectMapper();
+        Map map = mapper.readValue(message, Map.class);
+        long  userId = Long.parseLong(map.get("userId").toString());
         LOG.info("Initializing fiat balances for user: {}", userId);
         fiatService.initializeFiatBalancesForUser(userId);
     }

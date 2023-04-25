@@ -1,12 +1,16 @@
 package com.example.cryptoservice;
 
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.EnableKafka;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.stereotype.Service;
+
+import java.util.Map;
 
 
 @Service
@@ -19,9 +23,12 @@ public class CryptoServiceKafkaConsumer
     private CryptoService cryptoService;
 
     @KafkaListener(topics = "user-registered", groupId = "cryptoServiceUserRegistrationGroup", containerFactory = "userRegistrationKafkaListenerContainerFactory")
-    public void onUserRegistration(Long userId)
+    public void onUserRegistration(String message) throws JsonProcessingException
     {
-        LOG.info("Initializing crypto balances for user: {}", userId);
+        ObjectMapper mapper = new ObjectMapper();
+        Map map = mapper.readValue(message, Map.class);
+        long  userId = Long.parseLong(map.get("userId").toString());
+        LOG.info("Initializing fiat balances for user: {}", userId);
         cryptoService.initializeCryptoBalancesForUser(userId);
     }
 
