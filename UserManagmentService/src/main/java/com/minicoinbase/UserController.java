@@ -51,6 +51,7 @@ public class UserController {
                 }
             }
         }
+        token.setPath("/");
         response.addCookie(token);
         return new ResponseEntity<>(token.getAttribute("jwt"), HttpStatus.OK);
     }
@@ -69,6 +70,7 @@ public class UserController {
             return new ResponseEntity<>("Email is not valid!", HttpStatus.BAD_REQUEST);
         }
         Cookie cookie = userService.registerUser(signUpDto);
+        cookie.setPath("/");
         response.addCookie(cookie);
         return new ResponseEntity<>("User registered successfully", HttpStatus.OK);
     }
@@ -84,6 +86,7 @@ public class UserController {
         userService.logout(jwt_token);
             Cookie cookie = new Cookie("jwt", "");
             cookie.setMaxAge(0);
+            cookie.setPath("/");
             response.addCookie(cookie);
         return new ResponseEntity<>("Logged out successfully", HttpStatus.OK);
     }

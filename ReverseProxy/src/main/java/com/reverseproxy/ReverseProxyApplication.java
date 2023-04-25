@@ -6,9 +6,13 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.gateway.route.RouteLocator;
 import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
 
 @SpringBootApplication
-
+@PropertySource("classpath:application.properties")
+@ComponentScan(basePackages = {"com.reverseproxy"})
 public class ReverseProxyApplication {
 
     public static void main(String[] args) {
