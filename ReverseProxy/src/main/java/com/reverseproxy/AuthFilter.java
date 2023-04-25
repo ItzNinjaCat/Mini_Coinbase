@@ -17,11 +17,9 @@ import java.util.Objects;
 @Component
 public class AuthFilter implements GatewayFilter {
 
-        @Value("${auth.url}")
-        private String authUrl;
+        private String authUrl = "http://auth-service:8090";
 
-        @Value("${user.management.url}")
-        private String userManagementUrl;
+        private String userManagementUrl = "http://user-management-service:8081";
 
         private final RestTemplate restTemplate;
 
@@ -44,6 +42,7 @@ public class AuthFilter implements GatewayFilter {
             headers.set("Authorization", "Bearer " + jwt);
             HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
             log.info(authUrl + "/auth/validate");
+            log.info(headers.toString());
             ResponseEntity<String> responseEntity =
                     restTemplate.exchange( authUrl + "/auth/validate",
                             HttpMethod.GET, requestEntity, String.class);
@@ -51,6 +50,7 @@ public class AuthFilter implements GatewayFilter {
             if (responseEntity.getStatusCode() != HttpStatus.OK ) {
                 return onError(exchange, "Invalid JWT token", HttpStatus.UNAUTHORIZED);
             }
+            requestEntity.getHeaders().add(HttpHeaders.COOKIE, "jwt=" + jwt);
             ResponseEntity<String> responseEntity2 =
                     restTemplate.exchange( userManagementUrl + "/api/user/is_verified",
                             HttpMethod.GET, requestEntity, String.class);

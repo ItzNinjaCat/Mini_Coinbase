@@ -3,7 +3,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
+import lombok.extern.slf4j.Slf4j;
+@Slf4j
 @RestController
 @RequestMapping("/auth")
 public class AuthController {
@@ -17,12 +18,14 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<String> login(@RequestParam("userId") String userId) {
         String token = jwtUtils.generateToken(userId);
+        redisService.save(token, jwtUtils.getTokenExpiration(token) / 1000);
         return new ResponseEntity<>(token, HttpStatus.OK);
     }
 
     @GetMapping("/validate")
     public ResponseEntity<String> validate(@RequestHeader("Authorization") String authHeader) {
         String token = authHeader.replace("Bearer ", "");
+        log.info(String.valueOf(redisService.exists(token)));
         if(!redisService.exists(token)){
             return ResponseEntity.badRequest().body("Token is invalidated");
         }

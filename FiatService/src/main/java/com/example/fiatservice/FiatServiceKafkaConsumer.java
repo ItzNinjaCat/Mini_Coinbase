@@ -25,6 +25,7 @@ public class FiatServiceKafkaConsumer
     @KafkaListener(topics = "user-registered", groupId = "fiatServiceUserRegistrationGroup", containerFactory = "userRegistrationKafkaListenerContainerFactory")
     public void onUserRegistration(String message) throws JsonProcessingException
     {
+        LOG.info("Received: {}", message);
         ObjectMapper mapper = new ObjectMapper();
         Map map = mapper.readValue(message, Map.class);
         long  userId = Long.parseLong(map.get("userId").toString());

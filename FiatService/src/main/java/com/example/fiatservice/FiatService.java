@@ -17,7 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
-public class FiatService
+public class    FiatService
 {
 
     private static final Logger LOG = LoggerFactory.getLogger(FiatService.class);
