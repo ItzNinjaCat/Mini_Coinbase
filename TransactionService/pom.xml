@@ -71,7 +71,7 @@
 		<dependency>
 			<groupId>org.apache.kafka</groupId>
 			<artifactId>kafka-streams</artifactId>
-			<version>3.4.0</version>
+			<version>3.3.2</version>
 		</dependency>
 		<dependency>
 			<groupId>com.github.ItzNinjaCat</groupId>
