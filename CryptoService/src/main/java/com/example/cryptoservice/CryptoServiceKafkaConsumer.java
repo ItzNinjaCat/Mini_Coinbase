@@ -18,7 +18,7 @@ public class CryptoServiceKafkaConsumer
     @Autowired
     private CryptoService cryptoService;
 
-    @KafkaListener(topics = "user_registered", groupId = "cryptoServiceUserRegistrationGroup", containerFactory = "userRegistrationKafkaListenerContainerFactory")
+    @KafkaListener(topics = "user-registered", groupId = "cryptoServiceUserRegistrationGroup", containerFactory = "userRegistrationKafkaListenerContainerFactory")
     public void onUserRegistration(Long userId)
     {
         LOG.info("Initializing crypto balances for user: {}", userId);

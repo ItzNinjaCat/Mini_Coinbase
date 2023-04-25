@@ -18,7 +18,7 @@ public class FiatServiceKafkaConsumer
     @Autowired
     private FiatService fiatService;
 
-    @KafkaListener(topics = "user_registered", groupId = "fiatServiceUserRegistrationGroup", containerFactory = "userRegistrationKafkaListenerContainerFactory")
+    @KafkaListener(topics = "user-registered", groupId = "fiatServiceUserRegistrationGroup", containerFactory = "userRegistrationKafkaListenerContainerFactory")
     public void onUserRegistration(Long userId)
     {
         LOG.info("Initializing fiat balances for user: {}", userId);
