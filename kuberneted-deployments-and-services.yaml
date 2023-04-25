@@ -308,7 +308,7 @@ spec:
                       - name: DB_PORT
                         value: "3306"
                       - name: DB_NAME
-                        value: "coinbase"
+                        value: "users"
                       - name: DB_USERNAME
                         value: "root"
                       - name: DB_PASSWORD
@@ -464,7 +464,7 @@ spec:
                       - name: DB_PORT
                         value: "3306"
                       - name: DB_NAME
-                        value: "coinbase"
+                        value: "transactions"
                       - name: DB_USERNAME
                         value: "root"
                       - name: DB_PASSWORD
@@ -516,7 +516,7 @@ spec:
                       - name: DB_PORT
                         value: "3306"
                       - name: DB_NAME
-                        value: "coinbase"
+                        value: "crypto"
                       - name: DB_USERNAME
                         value: "root"
                       - name: DB_PASSWORD
@@ -568,7 +568,7 @@ spec:
                       - name: DB_PORT
                         value: "3306"
                       - name: DB_NAME
-                        value: "coinbase"
+                        value: "fiat"
                       - name: DB_USERNAME
                         value: "root"
                       - name: DB_PASSWORD
