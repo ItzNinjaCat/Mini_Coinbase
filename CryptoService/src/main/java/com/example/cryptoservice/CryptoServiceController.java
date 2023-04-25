@@ -32,37 +32,40 @@ public class CryptoServiceController
         }
     }
 
-//    @PostMapping("/exchange")
-//    public ResponseEntity<BigDecimal> getPrice(@RequestParam long userId,
-//                                               @RequestParam int amount,
-//                                               @RequestParam String crypto,
-//                                               @RequestParam String cryptoReceive)
-//    {
-//        CryptoBalance user = cryptoBalanceRepository.findByUserIdAndCrypto(userId, crypto).orElseThrow();
-//        BigDecimal userCryptoAmount = user.getBalance();
-//        if (userCryptoAmount.compareTo(BigDecimal.valueOf(amount)) < 0) {
-//            return ResponseEntity.badRequest().build();
-//        }
-//
-//        double rate = getExchangeRate(crypto, cryptoReceive);
-//
-//        double receivedAmount = amount * rate;
-//
-//        user.setBalance(userCryptoAmount.subtract(BigDecimal.valueOf(amount)));
-//
-//        cryptoBalanceRepository.save(user);
-//        return ResponseEntity.ok("Exchanged " + amount + " " + crypto + " for " + receivedAmount + " " + cryptoReceive).build();
-//
-//    }
 
-//    private double getExchangeRate(String cryptoFrom, String cryptoTo) {
-//        if (cryptoFrom == cryptoTo) {
-//            return 1.0;
-//        }
-//
-//        double cryptoFromValue = cryptoService.getPrice(cryptoFrom, "usd").doubleValue();
-//        double cryptoToValue = cryptoService.getPrice(cryptoTo, "usd").doubleValue();
-//
-//        return cryptoFromValue / cryptoToValue;
-//    }
+    @PostMapping("/exchange")
+    public ResponseEntity<BigDecimal> getPrice(@RequestParam long userId,
+                                               @RequestParam int amount,
+                                               @RequestParam String crypto,
+                                               @RequestParam String cryptoReceive)
+    {
+        CryptoBalance userFromCrypto = cryptoBalanceRepository.findByUserIdAndCrypto(userId, crypto).orElseThrow();
+        CryptoBalance userToCrypto = cryptoBalanceRepository.findByUserIdAndCrypto(userId, cryptoReceive).orElseThrow();
+
+        BigDecimal userFromCryptoAmount = userFromCrypto.getBalance();
+        if (userFromCryptoAmount.compareTo(BigDecimal.valueOf(amount)) < 0) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        double rate = getExchangeRate(crypto, cryptoReceive);
+        double receivedAmount = amount * rate;
+
+        userToCrypto.setBalance(userToCrypto.getBalance().add(BigDecimal.valueOf(receivedAmount)));
+        userFromCrypto.setBalance(userFromCrypto.getBalance().subtract(BigDecimal.valueOf(amount)));
+
+        cryptoBalanceRepository.save(userToCrypto);
+        cryptoBalanceRepository.save(userFromCrypto);
+        return ResponseEntity.ok().build();
+    }
+
+    private double getExchangeRate(String cryptoFrom, String cryptoTo) {
+        if (cryptoFrom == cryptoTo) {
+            return 1.0;
+        }
+
+        double cryptoFromValue = cryptoService.getPrice(cryptoFrom, "usd").doubleValue();
+        double cryptoToValue = cryptoService.getPrice(cryptoTo, "usd").doubleValue();
+
+        return cryptoFromValue / cryptoToValue;
+    }
 }
