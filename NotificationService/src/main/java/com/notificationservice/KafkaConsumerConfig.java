@@ -16,12 +16,13 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
-
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.HashMap;
 import java.util.Map;
 
+@Slf4j
 @Configuration
 @EnableKafka
 public class KafkaConsumerConfig {
@@ -83,7 +84,7 @@ public class KafkaConsumerConfig {
     public void listenGroupDeposit(String message) throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();
         Map map = mapper.readValue(message, Map.class);
-        Long id = (Long) map.get("userId");
+        Integer id = (Integer) map.get("userId");
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<?> requestEntity = new HttpEntity<>(headers);
@@ -91,11 +92,11 @@ public class KafkaConsumerConfig {
         notificationService.sendSuccessfullyDepositedEmail(email, (String) map.get("amount"), (String) map.get("currency"));
     }
 
-    @KafkaListener(topics = "withdraw-success", groupId = "withdraw")
+    @KafkaListener(topics = "withdraw-completed", groupId = "withdraw")
     public void listenGroupWithdraw(String message) throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();
         Map map = mapper.readValue(message, Map.class);
-        Long id = (Long) map.get("userId");
+        Integer id = (Integer) map.get("userId");
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<?> requestEntity = new HttpEntity<>(headers);
@@ -103,11 +104,11 @@ public class KafkaConsumerConfig {
         notificationService.sendSuccessfullyWithdrawnEmail(email, (String) map.get("amount"), (String) map.get("currency"));
     }
 
-    @KafkaListener(topics = "transfer-success", groupId = "transfer")
+    @KafkaListener(topics = "transaction-completed", groupId = "transaction")
     public void listenGroupTransfer(String message) throws JsonProcessingException {
         ObjectMapper mapper = new ObjectMapper();
         Map map = mapper.readValue(message, Map.class);
-        Long id = (Long) map.get("userId");
+        Integer id = (Integer) map.get("userId");
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<?> requestEntity = new HttpEntity<>(headers);

@@ -112,4 +112,13 @@ public class UserController {
         }
         return new ResponseEntity<>("User is not verified", HttpStatus.BAD_REQUEST);
     }
+
+    @GetMapping("/getEmail")
+    public ResponseEntity<?> getEmail(@RequestParam("userId") Long userId){
+        Optional<User> user = userRepository.findById(userId);
+        if(user.isEmpty()){
+            return new ResponseEntity<>("User not found", HttpStatus.BAD_REQUEST);
+        }
+        return new ResponseEntity<>(user.get().getEmail(), HttpStatus.OK);
+    }
 }

@@ -51,7 +51,7 @@ public class TransactionServiceApplication {
 
 	@Bean
 	public NewTopic transactionCompletedTopic() {
-		return TopicBuilder.name("transaction-completed")
+			return TopicBuilder.name("transaction-completed")
 				.partitions(3)
 				.compact()
 				.build();
@@ -88,8 +88,4 @@ public class TransactionServiceApplication {
 				.withValueSerde(TransactionDtoSerde));
 	}
 
-	@Bean
-	public RestTemplate restTemplate() {
-		return new RestTemplate();
-	}
 }
