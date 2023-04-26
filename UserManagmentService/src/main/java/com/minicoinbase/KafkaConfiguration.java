@@ -38,6 +38,23 @@ public class KafkaConfiguration {
         return props;
     }
     @Bean
+    public NewTopic depositCompletedTopic() {
+        return TopicBuilder.name("deposit-completed")
+                .partitions(3)
+                .replicas(1)
+                .compact()
+                .build();
+    }
+
+    @Bean
+    public NewTopic withdrawCompletedTopic() {
+        return TopicBuilder.name("withdraw-completed")
+                .partitions(3)
+                .replicas(1)
+                .compact()
+                .build();
+    }
+    @Bean
     public NewTopic registrationTopic() {
         return TopicBuilder.name("user-registered")
                 .partitions(6)

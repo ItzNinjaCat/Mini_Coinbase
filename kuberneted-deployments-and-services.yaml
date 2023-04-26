@@ -357,6 +357,10 @@ spec:
         - name: notification-service
           image: ninjakotka/notification-service:latest
           env:
+            - name: USR_HOST
+              value: user-management-service
+            - name: USR_PORT
+              value: "8081"
             - name: KAFKA_HOST
               value: kafka-broker
             - name: KAFKA_PORT

@@ -17,7 +17,9 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 public class TransactionService
 {
@@ -39,9 +41,9 @@ public class TransactionService
 
     public BigDecimal getCryptoPrice(String cryptoCurrency, String fiatCurrency)
     {
-        String url = "http://localhost:8082/api/crypto/{cryptoCurrency}/price/{fiatCurrency}";
+        String url = String.format("http://crypto-service:8083/api/crypto/%s/price/%s", cryptoCurrency, fiatCurrency);
         BigDecimal price = null;
-
+        log.info(url);
         try
         {
             ResponseEntity<BigDecimal> response = restTemplate.getForEntity(url, BigDecimal.class, cryptoCurrency, fiatCurrency);
@@ -64,7 +66,7 @@ public class TransactionService
 
     public boolean isFiatCurrencySupported(String fiatCurrency)
     {
-        String url = "http://localhost:8083/api/fiat/supported-currencies";
+        String url = "http://fiat-service:8084/api/fiat/supported-currencies";
         String supportedCurrenciesString = restTemplate.getForObject(url, String.class);
 
         if (supportedCurrenciesString != null)

@@ -50,10 +50,12 @@ public class AuthFilter implements GatewayFilter {
             if (responseEntity.getStatusCode() != HttpStatus.OK ) {
                 return onError(exchange, "Invalid JWT token", HttpStatus.UNAUTHORIZED);
             }
-            requestEntity.getHeaders().add(HttpHeaders.COOKIE, "jwt=" + jwt);
+            HttpHeaders headers2 = new HttpHeaders();
+            headers2.add("Cookie", "jwt=" + jwt);
+            HttpEntity<Void> requestEntity2 = new HttpEntity<>(headers2);
             ResponseEntity<String> responseEntity2 =
                     restTemplate.exchange( userManagementUrl + "/api/user/is_verified",
-                            HttpMethod.GET, requestEntity, String.class);
+                            HttpMethod.GET, requestEntity2, String.class);
             log.info("Response from user management service: " + responseEntity2.getStatusCode());
             if (responseEntity2.getStatusCode() != HttpStatus.OK ) {
                 return onError(exchange, "User is not verified", HttpStatus.UNAUTHORIZED);

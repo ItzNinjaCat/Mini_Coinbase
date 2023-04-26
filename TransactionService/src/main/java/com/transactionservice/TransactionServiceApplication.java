@@ -53,7 +53,7 @@ public class TransactionServiceApplication {
 	public NewTopic transactionCompletedTopic() {
 		return TopicBuilder.name("transaction-completed")
 				.partitions(3)
-//				.compact()
+				.compact()
 				.build();
 	}
 

@@ -13,7 +13,6 @@ import java.util.Map;
 
 
 @Service
-@EnableKafka
 public class FiatServiceKafkaConsumer
 {
 
